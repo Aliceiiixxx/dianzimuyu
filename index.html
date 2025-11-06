@@ -1,0 +1,542 @@
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>敲电子木鱼 加赛博功德</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#ff6b35',
+            secondary: '#4ecdc4',
+            dark: '#1a535c',
+            light: '#f7fff7',
+            accent: '#ffd166'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'float': 'float 3s ease-in-out infinite',
+            'pulse-fast': 'pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-scale': 'bounce-scale 0.5s ease',
+            'fade-out': 'fade-out 1s ease-out forwards',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            'bounce-scale': {
+              '0%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(0.95)' },
+              '100%': { transform: 'scale(1)' },
+            },
+            'fade-out': {
+              '0%': { opacity: '1', transform: 'translateY(0)' },
+              '100%': { opacity: '0', transform: 'translateY(-20px)' },
+            },
+            'glow': {
+              '0%': { filter: 'brightness(1) drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))' },
+              '100%': { filter: 'brightness(1.2) drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .text-shadow-lg {
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .text-shadow-glow {
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+      }
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .wooden-fish-shadow {
+        filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.4));
+      }
+      .wooden-fish-shadow-hover {
+        filter: drop-shadow(0 15px 12px rgba(0, 0, 0, 0.5));
+      }
+    }
+    
+    body {
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #000;
+      background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(78, 205, 196, 0.1) 0%, transparent 50%);
+      min-height: 100vh;
+    }
+    
+    .muyu-container {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .muyu-container:active {
+      transform: scale(0.95);
+    }
+    
+    .merit-popup {
+      position: absolute;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+      animation: fade-out 1s ease-out forwards;
+      pointer-events: none;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    @keyframes fade-out {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+    
+    .achievement-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(26, 83, 92, 0.9);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      z-index: 100;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      animation: achievement-popup 2s ease-out forwards;
+      text-align: center;
+    }
+    
+    @keyframes achievement-popup {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      10% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      20% { transform: translate(-50%, -50%) scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+    }
+    
+    .auto-click-btn.active {
+      background-color: theme('colors.primary');
+      box-shadow: 0 0 15px theme('colors.primary');
+    }
+    
+    .triple-merit-btn.active {
+      background-color: theme('colors.accent');
+      color: theme('colors.dark');
+      box-shadow: 0 0 15px theme('colors.accent');
+    }
+    
+    .muyu-icon {
+      transition: all 0.3s ease;
+    }
+    
+    .muyu-container:hover .muyu-icon {
+      filter: brightness(1.1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+    }
+    
+    .muyu-container:active .muyu-icon {
+      filter: brightness(0.9) drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
+    }
+    
+    .merit-counter {
+      transition: all 0.3s ease;
+    }
+    
+    .merit-counter.increase {
+      animation: merit-increase 0.5s ease;
+    }
+    
+    @keyframes merit-increase {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    /* 粒子效果 */
+    .particle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: white;
+      opacity: 0.8;
+      pointer-events: none;
+      animation: particle-animation 1s ease-out forwards;
+    }
+    
+    @keyframes particle-animation {
+      0% { opacity: 0.8; transform: translate(0, 0); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+  <!-- 标题 -->
+  <h1 class="text-4xl md:text-5xl font-bold text-white mb-8 text-center text-shadow-glow animate-glow">
+    敲电子木鱼
+  </h1>
+  <h2 class="text-2xl md:text-3xl font-semibold text-white mb-12 text-center text-shadow">
+    加赛博功德
+  </h2>
+  
+  <!-- 功德计数器 -->
+  <div class="absolute top-4 right-4 glass-effect rounded-full px-6 py-3 flex items-center justify-center">
+    <i class="fa fa-star text-accent mr-2 animate-pulse"></i>
+    <span id="merit-counter" class="text-2xl font-bold text-white">0</span>
+  </div>
+  
+  <!-- 主要内容区 -->
+  <div class="relative flex flex-col items-center justify-center flex-grow">
+    <!-- 木鱼容器 -->
+    <div id="muyu-container" class="muyu-container flex items-center justify-center mb-8">
+      <img src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/code_assistant/70457a6194614c65b20be83d27b4b59b~tplv-a9rns2rl98-image.image?rcl=2025110615511956F486F70F0125077C6A&amp;rk3s=8e244e95&amp;rrcfp=e75484ac&amp;x-expires=1763020279&amp;x-signature=sczn3kbnxOD0GtcwoKPhwx7%2Bq7o%3D" alt="木鱼" class="muyu-icon w-48 h-48 md:w-64 md:h-64 object-contain wooden-fish-shadow hover:wooden-fish-shadow-hover transition-all duration-300 animate-float" style="box-shadow: rgba(47, 53, 64, 0.02) 0px 0px 4px 0px, rgba(47, 53, 64, 0.1) 0px 6px 10px 0px; border: 1px solid rgba(0, 0, 0, 0.08);">
+    </div>
+    
+    <!-- 功能按钮 -->
+    <div class="flex flex-wrap justify-center gap-4 mt-8">
+      <button id="auto-click-btn" class="auto-click-btn glass-effect rounded-full px-6 py-3 text-white font-semibold transition-all duration-300 opacity-50 cursor-not-allowed" disabled="">
+        <i class="fa fa-bolt mr-2"></i>自动功德
+      </button>
+      <button id="triple-merit-btn" class="triple-merit-btn glass-effect rounded-full px-6 py-3 text-white font-semibold transition-all duration-300 opacity-50 cursor-not-allowed" disabled="">
+        <i class="fa fa-trophy mr-2"></i>三倍功德
+      </button>
+      <button id="reset-btn" class="glass-effect rounded-full px-6 py-3 text-white font-semibold transition-all duration-300 hover:bg-opacity-30">
+        <i class="fa fa-refresh mr-2"></i>重置
+      </button>
+    </div>
+  </div>
+  
+  <!-- 底部信息 -->
+  <footer class="mt-auto py-4 text-center text-white text-opacity-70 text-sm">
+    <p>点击木鱼，积攒功德</p>
+    <p class="mt-1">超过6666次点击解锁自动功德，超过66666次点击解锁三倍功德</p>
+  </footer>
+  
+  <!-- 音效元素 -->
+  <audio id="muyu-sound" preload="auto">
+    <source src="https://cdn-sqn.2gei.com/sound/class/mu_yu_qiao/02.mp3" type="audio/mpeg">
+  </audio>
+  
+  <script>
+    // 游戏状态
+    const gameState = {
+      merit: 0,
+      clicks: 0,
+      autoClickActive: false,
+      tripleMeritActive: false,
+      autoClickInterval: null
+    };
+    
+    // DOM 元素
+    const meritCounter = document.getElementById('merit-counter');
+    const muyuContainer = document.getElementById('muyu-container');
+    const muyuSound = document.getElementById('muyu-sound');
+    const autoClickBtn = document.getElementById('auto-click-btn');
+    const tripleMeritBtn = document.getElementById('triple-merit-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    
+    // 初始化
+    function init() {
+      // 加载保存的游戏数据
+      loadGameData();
+      
+      // 更新UI
+      updateUI();
+      
+      // 添加事件监听器
+      muyuContainer.addEventListener('click', handleMuyuClick);
+      autoClickBtn.addEventListener('click', toggleAutoClick);
+      tripleMeritBtn.addEventListener('click', toggleTripleMerit);
+      resetBtn.addEventListener('click', resetGame);
+      
+      // 检查解锁条件
+      checkUnlocks();
+    }
+    
+    // 处理木鱼点击
+    function handleMuyuClick(e) {
+      // 增加点击次数
+      gameState.clicks++;
+      
+      // 计算功德值
+      const meritGain = gameState.tripleMeritActive ? 3 : 1;
+      gameState.merit += meritGain;
+      
+      // 更新UI
+      updateUI();
+      
+      // 播放音效
+      playMuyuSound();
+      
+      // 显示功德弹窗
+      showMeritPopup(e.clientX, e.clientY, meritGain);
+      
+      // 创建粒子效果
+      createParticles(e.clientX, e.clientY);
+      
+      // 检查解锁条件
+      checkUnlocks();
+      
+      // 保存游戏数据
+      saveGameData();
+    }
+    
+    // 播放木鱼音效
+    function playMuyuSound() {
+      // 克隆音效元素以支持快速连续播放
+      const soundClone = muyuSound.cloneNode();
+      soundClone.volume = 0.5;
+      soundClone.play().catch(e => console.log('无法播放音效:', e));
+      
+      // 播放后移除克隆元素
+      setTimeout(() => {
+        soundClone.remove();
+      }, 1000);
+    }
+    
+    // 显示功德弹窗
+    function showMeritPopup(x, y, merit) {
+      const popup = document.createElement('div');
+      popup.className = 'merit-popup';
+      popup.textContent = `功德+${merit}`;
+      popup.style.left = `${x}px`;
+      popup.style.top = `${y}px`;
+      
+      document.body.appendChild(popup);
+      
+      // 移除弹窗
+      setTimeout(() => {
+        popup.remove();
+      }, 1000);
+    }
+    
+    // 创建粒子效果
+    function createParticles(x, y) {
+      const particleCount = 8;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // 随机位置和颜色
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 30 + Math.random() * 20;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        // 随机颜色
+        const colors = ['#fff', '#ffd166', '#4ecdc4', '#ff6b35'];
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        document.body.appendChild(particle);
+        
+        // 移除粒子
+        setTimeout(() => {
+          particle.remove();
+        }, 1000);
+      }
+    }
+    
+    // 切换自动点击
+    function toggleAutoClick() {
+      if (!gameState.autoClickActive) {
+        // 开启自动点击
+        gameState.autoClickActive = true;
+        autoClickBtn.classList.add('active');
+        
+        // 模拟点击
+        gameState.autoClickInterval = setInterval(() => {
+          const rect = muyuContainer.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          
+          // 创建一个模拟点击事件
+          const clickEvent = new MouseEvent('click', {
+            clientX: centerX,
+            clientY: centerY,
+            bubbles: true
+          });
+          
+          muyuContainer.dispatchEvent(clickEvent);
+        }, 300); // 每300毫秒点击一次
+      } else {
+        // 关闭自动点击
+        gameState.autoClickActive = false;
+        autoClickBtn.classList.remove('active');
+        
+        clearInterval(gameState.autoClickInterval);
+      }
+      
+      // 保存游戏数据
+      saveGameData();
+    }
+    
+    // 切换三倍功德
+    function toggleTripleMerit() {
+      gameState.tripleMeritActive = !gameState.tripleMeritActive;
+      tripleMeritBtn.classList.toggle('active');
+      
+      // 保存游戏数据
+      saveGameData();
+    }
+    
+    // 重置游戏
+    function resetGame() {
+      if (confirm('确定要重置游戏吗？所有功德和解锁将被清除。')) {
+        // 重置游戏状态
+        gameState.merit = 0;
+        gameState.clicks = 0;
+        
+        // 关闭自动点击
+        if (gameState.autoClickActive) {
+          gameState.autoClickActive = false;
+          autoClickBtn.classList.remove('active');
+          clearInterval(gameState.autoClickInterval);
+        }
+        
+        // 关闭三倍功德
+        if (gameState.tripleMeritActive) {
+          gameState.tripleMeritActive = false;
+          tripleMeritBtn.classList.remove('active');
+        }
+        
+        // 更新UI
+        updateUI();
+        
+        // 重置按钮状态
+        autoClickBtn.disabled = true;
+        autoClickBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        tripleMeritBtn.disabled = true;
+        tripleMeritBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // 清除保存的数据
+        localStorage.removeItem('woodenFishGameData');
+        
+        // 显示重置成功弹窗
+        showAchievementPopup('游戏已重置');
+      }
+    }
+    
+    // 更新UI
+    function updateUI() {
+      // 更新功德计数器
+      meritCounter.textContent = gameState.merit.toLocaleString();
+      
+      // 添加增长动画
+      meritCounter.classList.add('increase');
+      setTimeout(() => {
+        meritCounter.classList.remove('increase');
+      }, 500);
+    }
+    
+    // 检查解锁条件
+    function checkUnlocks() {
+      // 解锁自动点击
+      if (gameState.clicks >= 6666 && !autoClickBtn.disabled) {
+        autoClickBtn.disabled = false;
+        autoClickBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        showAchievementPopup('恭喜解锁自动功德！');
+      }
+      
+      // 解锁三倍功德
+      if (gameState.clicks >= 66666 && !tripleMeritBtn.disabled) {
+        tripleMeritBtn.disabled = false;
+        tripleMeritBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        showAchievementPopup('恭喜解锁三倍功德！');
+      }
+    }
+    
+    // 显示成就弹窗
+    function showAchievementPopup(message) {
+      const popup = document.createElement('div');
+      popup.className = 'achievement-popup';
+      popup.textContent = message;
+      
+      document.body.appendChild(popup);
+      
+      // 移除弹窗
+      setTimeout(() => {
+        popup.remove();
+      }, 3000);
+    }
+    
+    // 保存游戏数据
+    function saveGameData() {
+      const data = {
+        merit: gameState.merit,
+        clicks: gameState.clicks,
+        autoClickActive: gameState.autoClickActive,
+        tripleMeritActive: gameState.tripleMeritActive
+      };
+      
+      localStorage.setItem('woodenFishGameData', JSON.stringify(data));
+    }
+    
+    // 加载游戏数据
+    function loadGameData() {
+      const savedData = localStorage.getItem('woodenFishGameData');
+      
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        
+        gameState.merit = data.merit || 0;
+        gameState.clicks = data.clicks || 0;
+        gameState.autoClickActive = data.autoClickActive || false;
+        gameState.tripleMeritActive = data.tripleMeritActive || false;
+        
+        // 恢复按钮状态
+        if (gameState.clicks >= 6666) {
+          autoClickBtn.disabled = false;
+          autoClickBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          
+          if (gameState.autoClickActive) {
+            autoClickBtn.classList.add('active');
+            toggleAutoClick(); // 重新开启自动点击
+          }
+        }
+        
+        if (gameState.clicks >= 66666) {
+          tripleMeritBtn.disabled = false;
+          tripleMeritBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          
+          if (gameState.tripleMeritActive) {
+            tripleMeritBtn.classList.add('active');
+          }
+        }
+      }
+    }
+    
+    // 初始化游戏
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+
+</body></html>
