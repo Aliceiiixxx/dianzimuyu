@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电子木鱼 - 功德速刷</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- GSAP 动画库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#8B4513',
+            secondary: '#D2B48C',
+            accent: '#FFD700',
+            background: '#F5F5DC',
+            text: '#3E2723'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      .text-shadow-lg {
+        text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+      }
+    }
+    
+    /* 自定义样式 */
+    body {
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    
+    .木鱼 {
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease-out;
+    }
+    
+    .木鱼:active {
+      transform: scale(0.95);
+    }
+    
+    .功德-popup {
+      position: absolute;
+      font-size: 24px;
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 100;
+      animation: float-up 1s ease-out forwards;
+    }
+    
+    @keyframes float-up {
+      0% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+    }
+    
+    .粒子 {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #FFD700;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    .游戏结束界面, .游戏胜利界面 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-out;
+    }
+    
+    .游戏结束界面.active, .游戏胜利界面.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="bg-background font-sans text-text">
+  <!-- 游戏容器 -->
+  <div class="relative w-screen h-screen overflow-hidden">
+    <!-- 背景图片 -->
+    <div class="absolute inset-0 z-0">
+      <img src="https://p11-doubao-search-sign.byteimg.com/labis/6935921769f617b439f11f1d0cef9e22~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1776857800&x-signature=Nv%2F8EBhQBwUbnGbCAdS%2Fyzs8vQ4%3D" 
+           alt="禅意背景" 
+           class="w-full h-full object-cover">
+    </div>
+    
+    <!-- 半透明遮罩 -->
+    <div class="absolute inset-0 z-10 bg-black bg-opacity-20"></div>
+    
+    <!-- 游戏标题 -->
+    <div class="absolute top-4 left-0 right-0 z-20 flex justify-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-accent text-shadow-lg">电子木鱼</h1>
+    </div>
+    
+    <!-- 功德值显示 -->
+    <div class="absolute top-16 left-0 right-0 z-20 flex justify-center">
+      <div class="bg-primary bg-opacity-80 px-6 py-3 rounded-full shadow-lg">
+        <span class="text-xl md:text-2xl font-bold text-accent">功德值: </span>
+        <span id="功德值显示" class="text-2xl md:text-3xl font-bold text-white">10</span>
+      </div>
+    </div>
+    
+    <!-- 木鱼图片 -->
+    <div id="木鱼" class="absolute z-30 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer">
+      <img src="https://p3-doubao-search-sign.byteimg.com/labis/9f7f85f40c09e0db31d264af0039a25c~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1776857790&x-signature=SS0Qh%2Fdfba1rcIL6wAFaRVfNgLg%3D" 
+           alt="木鱼" 
+           class="w-32 h-32 object-contain">
+    </div>
+    
+    <!-- 开始/暂停按钮 -->
+    <div class="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4">
+      <button id="按钮-开始" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2">
+        <i class="fa fa-play" aria-hidden="true"></i>
+        <span>开始敲击</span>
+      </button>
+      <button id="按钮-暂停" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2" disabled>
+        <i class="fa fa-pause" aria-hidden="true"></i>
+        <span>暂停</span>
+      </button>
+    </div>
+    
+    <!-- 游戏结束界面 -->
+    <div id="游戏结束界面" class="游戏结束界面">
+      <div class="bg-primary bg-opacity-90 p-8 rounded-xl shadow-2xl text-center">
+        <h2 class="text-4xl font-bold text-accent mb-4">功德耗尽</h2>
+        <p class="text-xl text-white mb-6">你的功德值已耗尽，游戏结束</p>
+        <button id="按钮-重新开始-失败" class="bg-accent hover:bg-yellow-500 text-primary font-bold py-3 px-8 rounded-full shadow-lg text-lg">
+          重新开始
+        </button>
+      </div>
+    </div>
+    
+    <!-- 游戏胜利界面 -->
+    <div id="游戏胜利界面" class="游戏胜利界面">
+      <div class="bg-primary bg-opacity-90 p-8 rounded-xl shadow-2xl text-center">
+        <h2 class="text-4xl font-bold text-accent mb-4">功德圆满</h2>
+        <p class="text-xl text-white mb-6">恭喜你获得66点功德，达成圆满！</p>
+        <button id="按钮-重新开始-胜利" class="bg-accent hover:bg-yellow-500 text-primary font-bold py-3 px-8 rounded-full shadow-lg text-lg">
+          再来一次
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 游戏状态
+    const gameState = {
+      功德值: 10,
+      最大功德值: 66,
+      游戏进行中: false,
+      木鱼速度: 2000, // 毫秒
+      木鱼移动计时器: null,
+      功德减少计时器: null,
+      木鱼元素: null,
+      功德值显示元素: null,
+      开始按钮: null,
+      暂停按钮: null,
+      游戏结束界面: null,
+      游戏胜利界面: null,
+      重新开始按钮失败: null,
+      重新开始按钮胜利: null,
+      游戏容器: null
+    };
+
+    // 初始化游戏
+    function 初始化游戏() {
+      // 获取DOM元素
+      gameState.木鱼元素 = document.getElementById('木鱼');
+      gameState.功德值显示元素 = document.getElementById('功德值显示');
+      gameState.开始按钮 = document.getElementById('按钮-开始');
+      gameState.暂停按钮 = document.getElementById('按钮-暂停');
+      gameState.游戏结束界面 = document.getElementById('游戏结束界面');
+      gameState.游戏胜利界面 = document.getElementById('游戏胜利界面');
+      gameState.重新开始按钮失败 = document.getElementById('按钮-重新开始-失败');
+      gameState.重新开始按钮胜利 = document.getElementById('按钮-重新开始-胜利');
+      gameState.游戏容器 = document.querySelector('.relative.w-screen.h-screen');
+      
+      // 设置事件监听器
+      gameState.木鱼元素.addEventListener('click', 点击木鱼);
+      gameState.开始按钮.addEventListener('click', 开始游戏);
+      gameState.暂停按钮.addEventListener('click', 暂停游戏);
+      gameState.重新开始按钮失败.addEventListener('click', 重新开始游戏);
+      gameState.重新开始按钮胜利.addEventListener('click', 重新开始游戏);
+    }
+
+    // 开始游戏
+    function 开始游戏() {
+      if (gameState.游戏进行中) return;
+      
+      gameState.游戏进行中 = true;
+      gameState.开始按钮.disabled = true;
+      gameState.暂停按钮.disabled = false;
+      
+      // 开始木鱼移动
+      gameState.木鱼移动计时器 = setInterval(移动木鱼, gameState.木鱼速度);
+      
+      // 开始功德减少
+      gameState.功德减少计时器 = setInterval(() => {
+        减少功德值(1);
+      }, 5000);
+    }
+
+    // 暂停游戏
+    function 暂停游戏() {
+      if (!gameState.游戏进行中) return;
+      
+      gameState.游戏进行中 = false;
+      gameState.开始按钮.disabled = false;
+      gameState.暂停按钮.disabled = true;
+      
+      clearInterval(gameState.木鱼移动计时器);
+      clearInterval(gameState.功德减少计时器);
+    }
+
+    // 重新开始游戏
+    function 重新开始游戏() {
+      // 重置游戏状态
+      gameState.功德值 = 10;
+      gameState.木鱼速度 = 2000;
+      
+      // 更新UI
+      更新功德值显示();
+      
+      // 隐藏结束界面
+      gameState.游戏结束界面.classList.remove('active');
+      gameState.游戏胜利界面.classList.remove('active');
+      
+      // 重置按钮状态
+      gameState.开始按钮.disabled = false;
+      gameState.暂停按钮.disabled = true;
+      
+      // 停止所有计时器
+      clearInterval(gameState.木鱼移动计时器);
+      clearInterval(gameState.功德减少计时器);
+      
+      // 移动木鱼到初始位置
+      gameState.木鱼元素.style.left = '50%';
+      gameState.木鱼元素.style.top = '50%';
+      gameState.木鱼元素.style.transform = 'translate(-50%, -50%)';
+    }
+
+    // 移动木鱼
+    function 移动木鱼() {
+      if (!gameState.游戏进行中) return;
+      
+      // 获取游戏容器尺寸
+      const 容器宽度 = gameState.游戏容器.clientWidth;
+      const 容器高度 = gameState.游戏容器.clientHeight;
+      
+      // 获取木鱼尺寸
+      const 木鱼宽度 = gameState.木鱼元素.offsetWidth;
+      const 木鱼高度 = gameState.木鱼元素.offsetHeight;
+      
+      // 计算随机位置（确保木鱼完全在屏幕内）
+      const 最大左偏移 = 容器宽度 - 木鱼宽度;
+      const 最大上偏移 = 容器高度 - 木鱼高度;
+      
+      const 随机左偏移 = Math.floor(Math.random() * 最大左偏移);
+      const 随机上偏移 = Math.floor(Math.random() * 最大上偏移);
+      
+      // 移动木鱼
+      gameState.木鱼元素.style.left = `${随机左偏移}px`;
+      gameState.木鱼元素.style.top = `${随机上偏移}px`;
+      gameState.木鱼元素.style.transform = 'translate(0, 0)';
+      
+      // 增加木鱼速度（变难）
+      if (gameState.木鱼速度 > 500) {
+        gameState.木鱼速度 -= 50;
+        clearInterval(gameState.木鱼移动计时器);
+        gameState.木鱼移动计时器 = setInterval(移动木鱼, gameState.木鱼速度);
+      }
+    }
+
+    // 点击木鱼
+    function 点击木鱼() {
+      if (!gameState.游戏进行中) return;
+      
+      // 增加功德值
+      增加功德值(1);
+      
+      // 显示功德+1动画
+      显示功德动画(gameState.木鱼元素.offsetLeft + gameState.木鱼元素.offsetWidth / 2, 
+                   gameState.木鱼元素.offsetTop);
+      
+      // 播放敲击音效
+      播放敲击音效();
+      
+      // 产生震动反馈
+      产生震动反馈();
+      
+      // 产生粒子效果
+      产生粒子效果(gameState.木鱼元素.offsetLeft + gameState.木鱼元素.offsetWidth / 2, 
+                   gameState.木鱼元素.offsetTop + gameState.木鱼元素.offsetHeight / 2);
+      
+      // 立即移动木鱼
+      移动木鱼();
+    }
+
+    // 增加功德值
+    function 增加功德值(数量) {
+      gameState.功德值 += 数量;
+      
+      // 检查是否达到胜利条件
+      if (gameState.功德值 >= gameState.最大功德值) {
+        游戏胜利();
+        return;
+      }
+      
+      更新功德值显示();
+    }
+
+    // 减少功德值
+    function 减少功德值(数量) {
+      gameState.功德值 -= 数量;
+      
+      // 检查是否达到失败条件
+      if (gameState.功德值 <= 0) {
+        游戏失败();
+        return;
+      }
+      
+      更新功德值显示();
+    }
+
+    // 更新功德值显示
+    function 更新功德值显示() {
+      gameState.功德值显示元素.textContent = gameState.功德值;
+      
+      // 添加数字变化动画
+      gameState.功德值显示元素.classList.add('scale-125');
+      setTimeout(() => {
+        gameState.功德值显示元素.classList.remove('scale-125');
+      }, 200);
+    }
+
+    // 显示功德动画
+    function 显示功德动画(x, y) {
+      const 功德Popup = document.createElement('div');
+      功德Popup.className = '功德-popup';
+      功德Popup.textContent = '功德+1';
+      功德Popup.style.left = `${x}px`;
+      功德Popup.style.top = `${y}px`;
+      
+      document.body.appendChild(功德Popup);
+      
+      // 移除动画元素
+      setTimeout(() => {
+        document.body.removeChild(功德Popup);
+      }, 1000);
+    }
+
+    // 播放敲击音效
+    function 播放敲击音效() {
+      // 创建音频上下文
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // 创建振荡器
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 设置音效参数
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+      
+      // 播放音效
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.3);
+    }
+
+    // 产生震动反馈
+    function 产生震动反馈() {
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+
+    // 产生粒子效果
+    function 产生粒子效果(x, y) {
+      const 粒子数量 = 10;
+      
+      for (let i = 0; i < 粒子数量; i++) {
+        const 粒子 = document.createElement('div');
+        粒子.className = '粒子';
+        
+        // 随机粒子大小
+        const 粒子大小 = Math.random() * 8 + 4;
+        粒子.style.width = `${粒子大小}px`;
+        粒子.style.height = `${粒子大小}px`;
+        
+        // 随机颜色
+        const 颜色 = ['#FFD700', '#FFC107', '#FFA000', '#FF8F00', '#FF6F00'][Math.floor(Math.random() * 5)];
+        粒子.style.backgroundColor = 颜色;
+        
+        // 初始位置
+        粒子.style.left = `${x}px`;
+        粒子.style.top = `${y}px`;
+        
+        document.body.appendChild(粒子);
+        
+        // 随机移动方向和距离
+        const 角度 = Math.random() * Math.PI * 2;
+        const 距离 = Math.random() * 50 + 20;
+        
+        const 目标X = x + Math.cos(角度) * 距离;
+        const 目标Y = y + Math.sin(角度) * 距离;
+        
+        // 使用GSAP动画粒子
+        gsap.to(粒子, {
+          x: targetX - x,
+          y: targetY - y,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power2.out',
+          onComplete: () => {
+            document.body.removeChild(粒子);
+          }
+        });
+      }
+    }
+
+    // 游戏胜利
+    function 游戏胜利() {
+      暂停游戏();
+      gameState.游戏胜利界面.classList.add('active');
+      
+      // 播放胜利音效
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(330, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(554, audioContext.currentTime + 0.4);
+      oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.6);
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 1.5);
+    }
+
+    // 游戏失败
+    function 游戏失败() {
+      暂停游戏();
+      gameState.游戏结束界面.classList.add('active');
+      
+      // 播放失败音效
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 0.5);
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.8);
+    }
+
+    // 页面加载完成后初始化游戏
+    window.addEventListener('load', 初始化游戏);
+  </script>
+</body>
+</html>
